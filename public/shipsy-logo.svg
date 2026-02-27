@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 100" fill="none">
+  <!-- Shipsy bird mark - dark navy body -->
+  <path d="M8 50 L48 10 L48 35 L112 35 L112 65 L48 65 L48 90 Z" fill="#0f1e37"/>
+  <!-- Cyan accent overlay creating the bird wing -->
+  <path d="M48 10 L48 35 L68 35 L68 22 L28 50 L68 78 L68 65 L48 65 L48 90 L8 50 Z" fill="#29b5e8"/>
+</svg>

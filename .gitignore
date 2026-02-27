@@ -1,0 +1,13 @@
+node_modules/
+.next/
+.env.local
+data/
+*.db
+*.db-shm
+*.db-wal
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+**/.DS_Store
+.claude/
+config/
