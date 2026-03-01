@@ -38,7 +38,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#f0f2f5" }}>
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "#f0f2f5" }}>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-2">
@@ -52,7 +52,7 @@ export default function LoginPage() {
 
         <form
           onSubmit={handleSubmit}
-          className="bg-white rounded-xl shadow-lg p-8 space-y-5"
+          className="bg-white rounded-xl shadow-lg p-6 sm:p-8 space-y-5"
         >
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">

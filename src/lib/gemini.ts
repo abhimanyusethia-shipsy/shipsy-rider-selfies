@@ -1,6 +1,13 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+let _ai: GoogleGenAI | null = null;
+
+function getAI(): GoogleGenAI {
+  if (!_ai) {
+    _ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+  }
+  return _ai;
+}
 
 export interface ProfileValidationResult {
   valid: boolean;
@@ -77,7 +84,7 @@ export async function validateProfilePicture(
   mimeType: string
 ): Promise<ProfileValidationResult> {
   try {
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model: "gemini-2.5-flash",
       contents: [
         {
@@ -116,7 +123,7 @@ export async function validateSelfie(
   try {
     console.log("[Gemini] Sending selfie validation request with 2 images...");
 
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model: "gemini-2.5-flash",
       contents: [
         {
