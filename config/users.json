@@ -1,0 +1,19 @@
+{
+  "users": [
+    {
+      "username": "admin",
+      "password": "admin123",
+      "display_name": "Admin User"
+    },
+    {
+      "username": "Abhimanyu",
+      "password": "shipsy123",
+      "display_name": "Abhimanyu"
+    },
+    {
+      "username": "dhruv",
+      "password": "dhruv123",
+      "display_name": "Dhruv"
+    }
+  ]
+}
