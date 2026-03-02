@@ -93,23 +93,23 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <h2 className="text-xl font-semibold text-gray-800">Profile Picture</h2>
+    <div className="max-w-2xl mx-auto space-y-4 md:space-y-6">
+      <h2 className="text-lg md:text-xl font-semibold text-gray-800">Profile Picture</h2>
 
       {/* Current Profile Picture */}
       {profile?.exists && (
-        <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
+        <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 space-y-4">
           <h3 className="text-sm font-semibold text-gray-500 uppercase">
             Current Profile Picture
           </h3>
-          <div className="flex items-start gap-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
             <img
               src={profile.imageUrl}
               alt="Profile"
-              className="w-40 h-40 object-cover rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
+              className="w-32 h-32 sm:w-40 sm:h-40 object-cover rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
               onClick={() => setViewerImage(profile.imageUrl!)}
             />
-            <div className="flex-1 space-y-3">
+            <div className="flex-1 space-y-3 w-full">
               <div className="flex items-center gap-2">
                 <span
                   className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
@@ -136,7 +136,7 @@ export default function ProfilePage() {
       )}
 
       {/* Upload New */}
-      <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
+      <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 space-y-4">
         <h3 className="text-sm font-semibold text-gray-500 uppercase">
           {profile?.exists ? "Update Profile Picture" : "Upload Profile Picture"}
         </h3>
@@ -202,18 +202,18 @@ export default function ProfilePage() {
 
       {/* Upload Result */}
       {uploadResult && (
-        <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
+        <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 space-y-4">
           <h3 className="text-sm font-semibold text-gray-500 uppercase">
             Upload Result
           </h3>
-          <div className="flex items-start gap-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
             <img
               src={uploadResult.imageUrl}
               alt="Uploaded"
-              className="w-32 h-32 object-cover rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
+              className="w-28 h-28 sm:w-32 sm:h-32 object-cover rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
               onClick={() => setViewerImage(uploadResult.imageUrl)}
             />
-            <div className="flex-1 space-y-3">
+            <div className="flex-1 space-y-3 w-full">
               <div className="flex items-center gap-2">
                 <span
                   className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${

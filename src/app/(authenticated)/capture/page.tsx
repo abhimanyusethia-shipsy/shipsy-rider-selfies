@@ -49,8 +49,8 @@ export default function CapturePage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <h2 className="text-xl font-semibold text-gray-800">Capture Selfie</h2>
+    <div className="max-w-2xl mx-auto space-y-4 md:space-y-6">
+      <h2 className="text-lg md:text-xl font-semibold text-gray-800">Capture Selfie</h2>
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg">
@@ -58,7 +58,7 @@ export default function CapturePage() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
+      <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 space-y-4">
         <h3 className="text-sm font-semibold text-gray-500 uppercase">
           Take a selfie
         </h3>
@@ -83,7 +83,7 @@ export default function CapturePage() {
 
       {/* Result */}
       {result && (
-        <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
+        <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-gray-500 uppercase">
               Verification Result
@@ -91,13 +91,13 @@ export default function CapturePage() {
             <StatusBadge status={result.aiStatus} />
           </div>
 
-          <div className="flex items-start gap-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
             <img
               src={result.selfieUrl}
               alt="Selfie"
-              className="w-32 h-32 object-cover rounded-xl"
+              className="w-28 h-28 sm:w-32 sm:h-32 object-cover rounded-xl"
             />
-            <div className="flex-1 space-y-3">
+            <div className="flex-1 space-y-3 w-full">
               <div className="text-sm space-y-1.5">
                 <div className="flex items-center gap-2">
                   {result.aiFaceValid ? (
