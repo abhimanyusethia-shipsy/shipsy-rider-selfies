@@ -1,21 +1,69 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect } from "react";
+import { FaceDetector, FilesetResolver } from "@mediapipe/tasks-vision";
 
 interface CameraCaptureProps {
   onCapture: (blob: Blob) => void;
   disabled?: boolean;
 }
 
+type CaptureStatus = "no_face" | "multiple_faces" | "align_face" | "ready";
+
 export default function CameraCapture({ onCapture, disabled }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const detectorRef = useRef<FaceDetector | null>(null);
+  const detectRafRef = useRef<number | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [initializing, setInitializing] = useState(false);
   const [captured, setCaptured] = useState<string | null>(null);
   const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
+  const [captureStatus, setCaptureStatus] = useState<CaptureStatus>("no_face");
   const [error, setError] = useState("");
+  const canCapture = captureStatus === "ready";
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const initDetector = async () => {
+      try {
+        const vision = await FilesetResolver.forVisionTasks(
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
+        );
+        const detector = await FaceDetector.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath:
+              "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite",
+            delegate: "GPU",
+          },
+          runningMode: "VIDEO",
+        });
+
+        if (cancelled) {
+          detector.close();
+          return;
+        }
+
+        detectorRef.current = detector;
+      } catch {
+        detectorRef.current = null;
+      }
+    };
+
+    initDetector();
+
+    return () => {
+      cancelled = true;
+      if (detectRafRef.current !== null) {
+        cancelAnimationFrame(detectRafRef.current);
+        detectRafRef.current = null;
+      }
+      detectorRef.current?.close();
+      detectorRef.current = null;
+    };
+  }, []);
 
   const startCamera = useCallback(async () => {
     try {
@@ -41,6 +89,7 @@ export default function CameraCapture({ onCapture, disabled }: CameraCaptureProp
       video.srcObject = stream;
       await video.play();
 
+      setCaptureStatus("no_face");
       setCameraActive(true);
     } catch (err: unknown) {
       const error = err as DOMException;
@@ -72,6 +121,11 @@ export default function CameraCapture({ onCapture, disabled }: CameraCaptureProp
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
+    if (detectRafRef.current !== null) {
+      cancelAnimationFrame(detectRafRef.current);
+      detectRafRef.current = null;
+    }
+    setCaptureStatus("no_face");
     setCameraActive(false);
   }, []);
 
@@ -80,13 +134,92 @@ export default function CameraCapture({ onCapture, disabled }: CameraCaptureProp
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
       }
+      if (detectRafRef.current !== null) {
+        cancelAnimationFrame(detectRafRef.current);
+      }
     };
   }, []);
+
+  useEffect(() => {
+    if (!cameraActive) {
+      setCaptureStatus("no_face");
+      return;
+    }
+
+    let cancelled = false;
+    const detector = detectorRef.current;
+    const video = videoRef.current;
+
+    if (!detector || !video) return;
+
+    const detect = () => {
+      if (cancelled) return;
+
+      if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && video.videoWidth > 0) {
+        const result = detector.detectForVideo(video, performance.now());
+        const faceCount = result.detections.length;
+
+        if (faceCount === 0) {
+          setCaptureStatus("no_face");
+        } else if (faceCount > 1) {
+          setCaptureStatus("multiple_faces");
+        } else {
+          const detection = result.detections[0];
+          const box = detection.boundingBox;
+
+          if (!box) {
+            setCaptureStatus("align_face");
+          } else {
+            const guideWidth = video.videoWidth * 0.52;
+            const guideHeight = video.videoHeight * 0.68;
+            const guideX = (video.videoWidth - guideWidth) / 2;
+            const guideY = (video.videoHeight - guideHeight) / 2;
+
+            const faceX = box.originX;
+            const faceY = box.originY;
+            const faceWidth = box.width;
+            const faceHeight = box.height;
+            const faceArea = faceWidth * faceHeight;
+
+            if (faceArea <= 0) {
+              setCaptureStatus("align_face");
+            } else {
+              const overlapWidth = Math.max(
+                0,
+                Math.min(faceX + faceWidth, guideX + guideWidth) - Math.max(faceX, guideX)
+              );
+              const overlapHeight = Math.max(
+                0,
+                Math.min(faceY + faceHeight, guideY + guideHeight) - Math.max(faceY, guideY)
+              );
+              const overlapArea = overlapWidth * overlapHeight;
+              const overlapRatio = overlapArea / faceArea;
+              const mostlyInsideGuideBox = overlapRatio >= 0.85;
+
+              setCaptureStatus(mostlyInsideGuideBox ? "ready" : "align_face");
+            }
+          }
+        }
+      }
+
+      detectRafRef.current = requestAnimationFrame(detect);
+    };
+
+    detectRafRef.current = requestAnimationFrame(detect);
+
+    return () => {
+      cancelled = true;
+      if (detectRafRef.current !== null) {
+        cancelAnimationFrame(detectRafRef.current);
+        detectRafRef.current = null;
+      }
+    };
+  }, [cameraActive]);
 
   const captureFrame = useCallback(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas || video.videoWidth === 0) return;
+    if (!canCapture || !video || !canvas || video.videoWidth === 0) return;
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -109,7 +242,7 @@ export default function CameraCapture({ onCapture, disabled }: CameraCaptureProp
       "image/jpeg",
       0.9
     );
-  }, [stopCamera]);
+  }, [canCapture, stopCamera]);
 
   const handleRetake = () => {
     if (captured) URL.revokeObjectURL(captured);
@@ -122,6 +255,20 @@ export default function CameraCapture({ onCapture, disabled }: CameraCaptureProp
     if (capturedBlob) {
       onCapture(capturedBlob);
     }
+  };
+
+  const statusMessage: Record<CaptureStatus, string> = {
+    no_face: "No face detected",
+    multiple_faces: "Multiple faces detected",
+    align_face: "Align your face inside the box",
+    ready: "Face aligned - you can capture",
+  };
+
+  const statusTextColor: Record<CaptureStatus, string> = {
+    no_face: "text-red-600",
+    multiple_faces: "text-red-600",
+    align_face: "text-amber-600",
+    ready: "text-green-600",
   };
 
   return (
@@ -167,19 +314,36 @@ export default function CameraCapture({ onCapture, disabled }: CameraCaptureProp
         Video element is ALWAYS in the DOM so the ref is available when startCamera runs.
         We toggle visibility with a class instead of conditional rendering.
       */}
-      <div className={cameraActive ? "relative" : "hidden"}>
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="w-full rounded-xl bg-black"
-          style={{ transform: "scaleX(-1)", minHeight: "300px" }}
-        />
+      <div className={cameraActive ? "" : "hidden"}>
+        <div className="relative overflow-hidden rounded-xl" style={{ aspectRatio: "640 / 480" }}>
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="absolute inset-0 w-full h-full object-cover bg-black"
+            style={{ transform: "scaleX(-1)" }}
+          />
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div
+              className={`w-[52%] h-[68%] rounded-[28px] border-2 ${
+                canCapture ? "border-green-500" : "border-red-400"
+              }`}
+            />
+          </div>
+        </div>
+        <p className={`mt-3 text-center text-sm font-medium ${statusTextColor[captureStatus]}`}>
+          {statusMessage[captureStatus]}
+        </p>
         <div className="flex justify-center mt-4">
           <button
             onClick={captureFrame}
-            className="w-16 h-16 bg-white border-4 border-gray-300 rounded-full hover:border-blue-500 transition-colors flex items-center justify-center cursor-pointer"
+            disabled={!canCapture}
+            className={`w-16 h-16 bg-white border-4 rounded-full transition-colors flex items-center justify-center ${
+              canCapture
+                ? "border-gray-300 hover:border-blue-500 cursor-pointer"
+                : "border-gray-200 opacity-50 cursor-not-allowed"
+            }`}
             title="Capture photo"
           >
             <div className="w-12 h-12 bg-red-500 rounded-full"></div>
